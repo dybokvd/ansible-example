@@ -27,16 +27,18 @@
 
     # задача установки Grafana
     # модуль: https://docs.ansible.com/ansible/latest/collections/ansible/builtin/apt_module.html
-    - name: Install Grafana package
-      apt:
-        update_cache: yes
-        deb: https://dl.grafana.com/oss/release/grafana_{{ grafana_version }}_amd64.deb
-      when: grafana_installed.rc != 0 and ansible_os_family == "Debian" and grafana_url_available.status == 200
+    - name: Install and start Grafana
+      block:
+        - name: Install Grafana package
+          apt:
+            update_cache: yes
+            deb: https://dl.grafana.com/oss/release/grafana_{{ grafana_version }}_amd64.deb
 
-    # задача запуска демона 
-    # модуль: https://docs.ansible.com/ansible/latest/collections/ansible/builtin/systemd_service_module.html
-    - name: Enable and start Grafana service
-      systemd_service:
-        name: grafana-server
-        state: started
-        enabled: yes 
+        # задача запуска демона 
+        # модуль: https://docs.ansible.com/ansible/latest/collections/ansible/builtin/systemd_service_module.html
+        - name: Enable and start Grafana service
+          systemd_service:
+            name: grafana-server
+            state: started
+            enabled: yes 
+      when: grafana_installed.rc != 0 and ansible_os_family == "Debian" and grafana_url_available.status == 200
