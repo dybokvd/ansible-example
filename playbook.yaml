@@ -5,13 +5,33 @@
 # выполнять действия от имени суперпользователя
   become: yes 
 
+  vars:
+    grafana_version: 12.1.0
+
   tasks:
+    - name: Check if Grafana is installed
+      # проверяем наличие бинарного файла на сервере
+      command: which grafana-server
+      # сохраняем результат проверки в регистр
+      register: grafana_installed
+      # игнорируем ошибку, если which не найдет grafana
+      ignore_errors: yes
+
+    - name: Check Grafana deb link correct
+      uri:
+        url: https://dl.grafana.com/oss/release/grafana_{{ grafana_version }}_amd64.deb
+        method: HEAD
+        return_content: false
+      register: grafana_url_available
+      ignore_errors: yes
+
     # задача установки Grafana
     # модуль: https://docs.ansible.com/ansible/latest/collections/ansible/builtin/apt_module.html
-    - name: Install Grafana
+    - name: Install Grafana package
       apt:
         update_cache: yes
-        deb: https://dl.grafana.com/oss/release/grafana_12.1.0_amd64.deb
+        deb: https://dl.grafana.com/oss/release/grafana_{{ grafana_version }}_amd64.deb
+      when: grafana_installed.rc != 0 and ansible_os_family == "Debian" and grafana_url_available.status == 200
 
     # задача запуска демона 
     # модуль: https://docs.ansible.com/ansible/latest/collections/ansible/builtin/systemd_service_module.html
